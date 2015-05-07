@@ -43,12 +43,12 @@ fprintf('\nmodel initialzation completed!\n\n');
 %% train second layer (1st convolution) - see param.layer
 tic;
 param = [];
-param.layer = 2;
-param.epochs = 150;
-param.lr = 0.015;
+param.layer = 2;                            %layer idx
+param.epochs = 150;                         %number of times going through training data
+param.lr = 0.015;                           %learning rate
 param.weight_decay = 1e-5;
 param.momentum = [0.5, 0.9];
-param.kPCD = 1;
+param.kPCD = 1;                             %CD-kPCD - size of markov chain in CD
 param.persistant = 0;
 param.batch_size = 32;
 param.sparse_damping = 0;
@@ -147,11 +147,12 @@ param.sparse_cost = 0;
 [model] = rbm_last(model, [train_label, hidden_prob_h6], param);
 toc;
 
-%%
+%% removing computed gradients from the layers
 for l = 2 : length(model.layers)
     model.layers{l} = rmfield(model.layers{l},'grdw');
     model.layers{l} = rmfield(model.layers{l},'grdb');
     model.layers{l} = rmfield(model.layers{l},'grdc');
 end
 
+%% saving pretrained model
 save('pretrained_model','model');

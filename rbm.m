@@ -16,7 +16,7 @@ assert(batch_num == floor(batch_num));
 
 fprintf('Begin pretraining the %1.d th RBM........\n', l-1);
 fprintf('layer size: %d\n', size(model.layers{l}.w,1));
-fprintf('PCD = %d of %d iterations\n', param.persistant, param.epochs);
+fprintf('PCD (persistent CD - Tieleman et al. 08) = %d of %d iterations\n', param.persistant, param.epochs);
 fprintf('lr = %f. sparse target: %f\n', param.lr, param.sparse_target);
 
 hidmeans = sparse_target * ones([1, model.layers{l}.layerSize], 'single');
