@@ -6,10 +6,8 @@ function [batch_data, batch_label] = sample_test_extreme(model, class)
 % be better.
 
 addpath 3D;
-kConv_forward = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu','kConvolve_forward');
-kConv_backward = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu', 'kConvolve_backward');
-kConv_forward_c = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu','kConvolve_forward_c');
-kConv_backward_c = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu', 'kConvolve_backward_c');
+global kConv_forward2 kConv_forward_c kConv_backward kConv_backward_c;
+fprintf('sampling %s from top RBM\n', model.classnames{class});
 
 if ~isfield(model.layers{2},'uw')
     model  = merge_model(model);
@@ -33,7 +31,7 @@ for epoch = 1 : param.epochs
     % propagate/inference bottum up using recognition weight. 
     for l = 2 : num_layer - 1
         if l == 2
-            hidden_presigmoid = myConvolve(kConv_forward, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
+            hidden_presigmoid = myConvolve2(kConv_forward2, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
             hidden_presigmoid = bsxfun(@plus, hidden_presigmoid, permute(model.layers{l}.c, [2,3,4,5,1]));
             batch_hidden_prob = sigmoid(hidden_presigmoid);
         elseif strcmp(model.layers{l}.type, 'convolution')
@@ -52,7 +50,6 @@ for epoch = 1 : param.epochs
     batch_data = reshape(batch_data, batch_size, []);
 
     hn_1 = batch_data;
-    %hn_1 = single(hn_1 > rand(size(hn_1)));
 
     temp_w = model.layers{num_layer}.w;
     temp_w(1:model.classes,:) = temp_w(1:model.classes,:) * model.duplicate;
@@ -94,7 +91,6 @@ for epoch = 1 : param.epochs
             batch_data = 1 ./ ( 1 + exp(-presigmoid) );
         end
     end
-    fprintf('batch_data : %f, batch_label: %f\n', sum(batch_data(:))/batch_size, sum(batch_label(:,3)/batch_size));
 end
 
 function [y] = sigmoid(x)

@@ -26,7 +26,7 @@ ylabel('y');
 zlabel('z');
 
 %% visualization 2
-% 3d pirnter style visualization to add layer by layer
+% 3d printer style visualization to add layer by layer
 
 careMask =  imdilate((Volume),ones(2,2,2));
 figure,plot3D(careMask,1,'timed', 0.1)

@@ -1,7 +1,9 @@
 function new_gridDists = get_next_view(gridDists, center, K, R, trans, halfWidth, volume_size, pad_len, crop)
 % Given an original gridDists(TSDF), and the new camera parameters
 % (R,trans), the function computes the new voxels that will be observed in
-% the new view. The new voxels will be marked as -2.
+% the new view. The new voxels will be marked with TSDF value -2.
+% The function is only used for visualization and maximum visibility
+% approach.
 
 % gridDists: original TSDF, 1 for surfaces, 0 for empty spaces, -1 for
 % unknown voxels.
@@ -127,7 +129,7 @@ while ~isempty(unobservedIdx)
     intersectionIdx = intersectionIdx(isValid);
     in_ray_idx = find(intersectionIdx == 1);
     ray_depth = gridProjDepth(in_ray_idx,:);
-    [ignore, sort_ind]= sort(ray_depth, 'ascend');
+    [~, sort_ind]= sort(ray_depth, 'ascend');
 
     the_unobserved_in_ray_idx = find(in_ray_idx == the_unobserved);
     the_unobserved_sort_in_ray_idx = find(sort_ind == the_unobserved_in_ray_idx);

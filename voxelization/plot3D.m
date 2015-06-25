@@ -163,6 +163,7 @@ function varargout = plot3D(varargin)
     % Pre-draw
     if strcmp(mode,MODE_2) || strcmp(mode,MODE_3)
       idx  = find(S(:,3)==zs(i));
+      
       hd1 = [];
       if strcmpi(style, VOXEL)
         for j=1:size(idx,1)
@@ -185,6 +186,9 @@ function varargout = plot3D(varargin)
     end
 
     idx2 = find(S2(:,3)==zs(i));
+    if isempty(idx2)
+          idx  = find(S2(:,3)==zs(i));
+    end
     h1 = [];
     if strcmpi(style, VOXEL)
       for j=1:size(idx2,1)
@@ -192,7 +196,7 @@ function varargout = plot3D(varargin)
         h1 = vertcat(h1,h2);
       end
     else
-      h1 = plot3(S2(idx,1), S2(idx,2), S2(idx,3), [c style]);
+      h1 = plot3(S2(idx2,1), S2(idx2,2), S2(idx2,3), [c style]);
     end
     h = vertcat(h1,h);
   end

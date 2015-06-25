@@ -13,10 +13,10 @@ function [rgb,points3d]=read_3d_pts_general(depthInpaint,K,depthInpaintsize,imag
         cx = K(1,3); cy = K(2,3);  
         fx = K(1,1); fy = K(2,2); 
     else
-        fx = 5.1885790117450188e+02;
-        fy = 5.1946961112127485e+02;
-        cx = 3.2558244941119034e+02;
-        cy = 2.5373616633400465e+02;
+        fx = 5.19e+02;
+        fy = 5.19e+02;
+        cx = 320;
+        cy = 240;
     end
     invalid = depthInpaint==0;
     if ~isempty(imageName)

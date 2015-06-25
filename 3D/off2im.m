@@ -1,5 +1,6 @@
 function [depth,K,crop] = off2im(offfile, ratio, xzRot, Rtilt, objx,objy, objz, modelsize,addfloor,enlargefloor)
 % Render a depth map from a 3D mesh model provided by Shuran Song.
+% calls RenderMex
 
 % offfile: off filename
 % ratio: set it 1
@@ -45,7 +46,7 @@ cx_rgb = imw/2;
 cy_rgb = imh/2;
 K=[fx_rgb 0 cx_rgb; 0 fy_rgb cy_rgb; 0 0 1];
 
-C = [0;0;0];    % y off should be 1.7
+C = [0;0;0];
 
 z_near = 0.3;
 z_far_ratio = 1.2;
@@ -74,10 +75,9 @@ end
 
 result = RenderMex(P, imw, imh, [vmat(1,:);vmat(2,:);vmat(3,:)], uint32(offobj.fmat))';
 depth = z_near./(1-double(result)/2^32);
-%maxDepth = max(depth(abs(depth) < 100));
 maxDepth = 10;
 cropmask = (depth < z_near) | (depth > z_far_ratio * maxDepth);
-depth(cropmask) = NaN;%z_far_ratio * maxDepth;
+depth(cropmask) = NaN;
 crop =[1,1];
 end
 
@@ -121,18 +121,15 @@ R = [cos(theta),0, -sin(theta);
 end
 
 function coornew = scalePoints(coor, center, size)
-
-% function coornew = scalePoints(coor, box)
-% 
 % parameters:
 %   coor: 3*n coordinates of n points
 %   center: 3*1 the center of new point cloud
 %   size: 3*1 the size of new point cloud
-
 minv = min(coor, [], 2);
 maxv = max(coor, [], 2);
 oldCenter = (minv+maxv)/2;
 oldSize = maxv - minv;
 scale = min(size./ oldSize);
 coornew = bsxfun(@plus, scale * coor, center-scale*oldCenter);
+
 end

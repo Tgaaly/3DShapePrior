@@ -1,7 +1,7 @@
 function [bbIdx, basis] = get_points_in_bb3d(points3d, bb3d)
-% extract object point cloud from whole scene point cloud for NYU test.
+% extract object point cloud from the 3d bounding box.
 % modified from NYU code.
-% points3d: point cloud from a whole picture.
+% points3d: point cloud from the scene.
 % bb3d: object bounding box in 3d.
 
 % each row is a orthogonal vector in basis matrix.

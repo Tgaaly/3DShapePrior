@@ -1,9 +1,9 @@
 function [samples] = sample_test_classification(model,class)
-% multiple category gibbs sampling. Take samples from the model given a
-% class specified.
+% multiple category gibbs sampling from the model with a class specified.
+% Do gibbs sampling on the top associative memory, and propagate it down.
 
-kConv_backward = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu','kConvolve_backward');
-kConv_backward_c = parallel.gpu.CUDAKernel('kFunctions.ptx','kFunctions.cu','kConvolve_backward_c');
+fprintf('sampling %s from top RBM\n', model.classnames{class});
+global kConv_backward kConv_backward_c;
 
 if isfield(model.layers{2}, 'w')
     model = merge_model(model);
@@ -11,8 +11,8 @@ end
 n = 32;
 
 num_layer = length(model.layers);
-hn = 1 * rand([n, model.layers{num_layer}.layerSize],'single');
-hn_1 = 0* rand([n, prod(model.layers{num_layer-1}.layerSize)],'single');
+hn = 0.5 * rand([n, model.layers{num_layer}.layerSize],'single');
+hn_1 = 0.5 * rand([n, prod(model.layers{num_layer-1}.layerSize)],'single');
 
 label = 0.5 * ones(n, model.classes);
 if exist('class', 'var')
@@ -42,8 +42,6 @@ for i = 1 : 2000
     hn_1 = 1 ./ ( 1 + exp(-hn_1));
     hn_1 = single(hn_1 > rand(size(hn_1)));
     hn_1 = hn_1(:,model.classes+1:end);
-    
-    fprintf('hn_1: %f, hn:%f\n',mean(hn_1(:)), mean(hn(:)));
 end
 
 samples = hn_1;

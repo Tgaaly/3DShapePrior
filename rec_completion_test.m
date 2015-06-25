@@ -17,9 +17,11 @@ end
 
 addpath voxelization;
 addpath 3D;
-global kConv_backward  kConv_backward_c kConv_forward kConv_forward_c;
+global kConv_backward  kConv_backward_c kConv_forward2 kConv_forward_c;
 
-model  = merge_model(model);
+if ~isfield(model.layers{2},'uw')
+    model = merge_model(model);
+end
 
 n = size(test_data,1);
 num_layer = length(model.layers);
@@ -42,7 +44,7 @@ for epoch = 1 : param.epochs
         % propagate/inference bottum up using recognition weight. 
         for l = 2 : num_layer - 1
             if l == 2
-                hidden_presigmoid = myConvolve(kConv_forward, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
+                hidden_presigmoid = myConvolve2(kConv_forward2, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
                 hidden_presigmoid = bsxfun(@plus, hidden_presigmoid, permute(model.layers{l}.c, [2,3,4,5,1]));
                 batch_hidden_prob = sigmoid(hidden_presigmoid);
             elseif strcmp(model.layers{l}.type, 'convolution')
@@ -83,8 +85,6 @@ for epoch = 1 : param.epochs
             batch_label = exp(bsxfun(@minus, hn_1(:,1:model.classes), max(hn_1(:,1:model.classes), [], 2)));
             batch_label = bsxfun(@rdivide, batch_label, sum(batch_label, 2));
             hn_1 = 1 ./ ( 1 + exp(-hn_1(:,model.classes+1:end)));
-            %batch_label  = mnrnd(1, batch_label);
-            %hn_1 = single(hn_1 > rand(size(hn_1)));
         end
 
         batch_data = reshape(hn_1, [this_size, model.layers{num_layer-1}.layerSize]);
@@ -113,12 +113,6 @@ for epoch = 1 : param.epochs
         
         completed_data((b-1) * batch_size + 1 : batch_end,:,:,:) = batch_data;
         predicted_label((b-1) * batch_size + 1 : batch_end,:) = batch_label;
-        
-        %fprintf('%f ', mean(batch_label,1));
-        %fprintf('\n');
-        %this_data(batch_mask) = 0;
-        %update = batch_data - this_data;
-        %fprintf('changes:%f, data_mean: %f, rec: %f\n', sum(update(:))/batch_size, mean(batch_data(:)), sum(batch_label(:,1))/batch_size);
     end
     
     if all(mean(predicted_label,1) == running_mean)
@@ -129,7 +123,6 @@ for epoch = 1 : param.epochs
     end
     % early stop
     if ((~param.earlyStop && epoch >= 100) || (param.earlyStop)) && ncount > 30 || epoch == param.epochs
-        %fprintf('iter : %d, rec : %f \n', epoch, sum(batch_label(:,1))/batch_size);
         break;
     end
 end
@@ -144,7 +137,7 @@ for b = 1 : batch_num
     % propagate/inference bottum up using recognition weight. 
     for l = 2 : num_layer - 1
         if l == 2
-            hidden_presigmoid = myConvolve(kConv_forward, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
+            hidden_presigmoid = myConvolve2(kConv_forward2, batch_data, model.layers{l}.uw, model.layers{l}.stride, 'forward');
             hidden_presigmoid = bsxfun(@plus, hidden_presigmoid, permute(model.layers{l}.c, [2,3,4,5,1]));
             batch_hidden_prob = sigmoid(hidden_presigmoid);
         elseif strcmp(model.layers{l}.type, 'convolution')
@@ -169,7 +162,7 @@ if show
 
         figure;
         subplot(1,2,1);
-        %plot3D(squeeze(completed_data(i,:,:,:,:)) > 0.2);
+        plot3D(squeeze(completed_data(i,:,:,:,:)) > 0.1);
         p = patch(isosurface(squeeze(completed_data(i,:,:,:)),0.1));
         set(p,'FaceColor','red','EdgeColor','none');
         daspect([1,1,1])
@@ -178,7 +171,7 @@ if show
         lighting gouraud
 
         subplot(1,2,2);
-        %plot3D(squeeze(the_sample) > 0);
+        plot3D(squeeze(the_sample) > 0);
         p = patch(isosurface(squeeze(the_sample),0.1));
         set(p,'FaceColor','red','EdgeColor','none');
         daspect([1,1,1])

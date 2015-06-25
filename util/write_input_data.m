@@ -1,67 +1,42 @@
-function write_input_data(data_path, volume_size, pad_len, angle_inc)
+function write_input_data(off_path, data_path, classes, volume_size, pad_size, angle_inc)
 % Put the mesh object in a volume grid and save the volumetric
 % represenation file.
+% This is the input volumetric data for 3D ShapeNets.
+% off_path: root off data folder
+% data_path: destination volumetric data folder
 
-addpath ../voxelization;
+phases = {'train', 'test'};
 
-classes = {'bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet'};
-data_size = pad_len * 2 + volume_size;
+data_size = pad_size * 2 + volume_size;
 for c = 1 : length(classes)
     fprintf('writing the %s category\n', classes{c});
-    category_path = [data_path '/' classes{c} '/off'];
+    category_path = [off_path '/' classes{c}];
     dest_path = [data_path '/' classes{c} '/' num2str(data_size)];
     if ~exist(dest_path, 'dir')
         mkdir(dest_path);
     end
-    % for train
-    train_path = [category_path '/train'];
-    dest_final_path = [dest_path '/train'];
-    if ~exist(dest_final_path, 'dir')
-        mkdir(dest_final_path);
-    end
-    files = dir(train_path);
-    for i = 1 : length(files)     
-        if strcmp(files(i).name, '.') || strcmp(files(i).name, '..') || files(i).isdir == 1 || ~strcmp(files(i).name(end-2:end), 'off')
-            continue;
+    % for train and test phases
+    for t = 1 : numel(phases)
+        phase = phases{t};
+        off_list = [category_path '/' phase];
+        dest_tsdf_path = [dest_path '/' phase];
+        if ~exist(dest_tsdf_path, 'dir')
+            mkdir(dest_tsdf_path);
         end
-        filename = [train_path '/' files(i).name];
-        for viewpoint = 1 : 360/angle_inc
-            destname = [dest_final_path '/' files(i).name(1:end-4) '_' num2str(viewpoint) '.mat'];
-            if exist('axis', 'var')
-                off_data = off_loader(filename, (viewpoint-1)*angle_inc, axis, stretch);
-            else
-                off_data = off_loader(filename, (viewpoint-1)*angle_inc);
+        files = dir(off_list);
+        for i = 1 : length(files)     
+            if strcmp(files(i).name, '.') || strcmp(files(i).name, '..') || files(i).isdir == 1 || ~strcmp(files(i).name(end-2:end), 'off')
+                continue;
             end
-            instance = polygon2voxel(off_data, [volume_size, volume_size, volume_size], 'auto');
-            instance = padarray(instance, [pad_len, pad_len, pad_len]);
-            instance = int8(instance);
-            save(destname, 'instance');
-        end
-    end
-    
-    % for test
-    test_path = [category_path '/test'];
-    dest_final_path = [dest_path '/test'];
-    if ~exist(dest_final_path, 'dir')
-        mkdir(dest_final_path);
-    end
-    files = dir(test_path);
-    for i = 1 : length(files)     
-        if strcmp(files(i).name, '.') || strcmp(files(i).name, '..') || files(i).isdir == 1 || ~strcmp(files(i).name(end-2:end), 'off')
-            continue;
-        end
-        filename = [test_path '/' files(i).name];
-        for viewpoint = 1 : 360/angle_inc
-            destname = [dest_final_path '/' files(i).name(1:end-4) '_' num2str(viewpoint) '.mat'];
-            if exist('axis', 'var')
-                off_data = off_loader(filename, (viewpoint-1)*angle_inc, axis, stretch);
-            else
+            filename = [off_list '/' files(i).name];
+            for viewpoint = 1 : 360/angle_inc
+                destname = [dest_tsdf_path '/' files(i).name(1:end-4) '_' num2str(viewpoint) '.mat'];
                 off_data = off_loader(filename, (viewpoint-1)*angle_inc);
+                instance = polygon2voxel(off_data, [volume_size, volume_size, volume_size], 'auto');
+                instance = padarray(instance, [pad_size, pad_size, pad_size]);
+                instance = int8(instance);
+                save(destname, 'instance');
             end
-            instance = polygon2voxel(off_data, [volume_size, volume_size, volume_size], 'auto');
-            instance = padarray(instance, [pad_len, pad_len, pad_len]);
-            instance = int8(instance);
-            save(destname, 'instance');
         end
     end
 end
@@ -76,9 +51,6 @@ assert(strcmp(OFF_sign, 'OFF') == 1);
 info = fscanf(fid, '%d', 3);
 offobj.vertices = reshape(fscanf(fid, '%f', info(1)*3), 3, info(1))';
 offobj.faces = reshape(fscanf(fid, '%d', info(2)*4), 4, info(2))';
-if ~isempty(find(offobj.faces(:,1) == 4, 1))
-    fprintf('nononononono\n');
-end
 
 % do some translation and rotation
 center = (max(offobj.vertices) + min(offobj.vertices)) / 2;

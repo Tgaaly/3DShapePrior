@@ -16,11 +16,14 @@ new_TSDF = zeros(size(completed_samples));
 ratio = 1;
 imw = 640 * ratio; 
 imh = 480 * ratio;
-fx_rgb = 5.19e+02 * ratio;
-fy_rgb = 5.19e+02 * ratio;
-cx_rgb = imw/2;
-cy_rgb = imh/2;
-K=[fx_rgb 0 cx_rgb; 0 fy_rgb cy_rgb; 0 0 1];
+if isempty(K)
+    fx_rgb = 5.19e+02 * ratio;
+    fy_rgb = 5.19e+02 * ratio;
+    cx_rgb = imw/2;
+    cy_rgb = imh/2;
+    K=[fx_rgb 0 cx_rgb; 0 fy_rgb cy_rgb; 0 0 1];
+end
+
 C = [0;0;0]; 
 z_near = 0.3;
 z_far_ratio = 1.2;
@@ -57,7 +60,6 @@ gridSize_z = round((gridDim(6)-gridDim(3))/stepSize(3)+1);
 gridCoord = bsxfun(@times,[X(:) Y(:) Z(:)]-1,stepSize(1:3));
 gridCoord = bsxfun(@plus,gridCoord,gridDim(1:3));
 
-%trans = - inv(R) * trans; % This is the camera position in world coordinate.
 for i = 1 : n
     isOccupied = (squeeze(completed_samples(i,:,:,:))==1);
     this_gridCoord = gridCoord(isOccupied,:);
@@ -66,10 +68,9 @@ for i = 1 : n
     
     result = RenderMex(P, imw, imh, [vertices(1,:);vertices(2,:);vertices(3,:)], uint32(faces))';
     depth_new = z_near./(1-double(result)/2^32);
-    %maxDepth = max(depth_new(abs(depth_new) < 100));
     maxDepth = 10;
     cropmask = (depth_new < z_near) | (depth_new > z_far_ratio * maxDepth);
-    depth_new(cropmask) = NaN;%z_far_ratio * maxDepth;
+    depth_new(cropmask) = NaN;
     
     R_cam{end+1} = R; trans_cam{end+1} = trans; depth{end+1} = depth_new;
     [this_gridDists, ~] = TSDF(depth, K, center, R_cam, trans_cam, volume_size * mult, pad_len * mult, halfWidth, [1,1]);
